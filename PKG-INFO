@@ -1,6 +1,6 @@
-Metadata-Version: 1.0
+Metadata-Version: 0.0
 Name: python-cjsonx
-Version: 1.0.0
+Version: 0.0.0
 Summary: Fast JSON encoder/decoder for Python with date/time and decimal values.
 Home-page: https://github.com/petronius/cjsonx/
 Author: Michael Schuller
@@ -28,7 +28,7 @@ Description: This module provides an extension to the JSON standard.
         100-250 times for decoding operations.
         
 Platform: Platform Independent
-Classifier: Development Status :: 5 - Production/Stable
+Classifier: Development Status :: 1 - Planning
 Classifier: Intended Audience :: Developers
 Classifier: License :: OSI Approved :: GNU Library or Lesser General Public License (LGPL)
 Classifier: Operating System :: OS Independent

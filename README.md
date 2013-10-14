@@ -1,3 +1,6 @@
+**Everything below represents aspirational goals for this module, and has not
+been implemented yet**
+
 # cjsonx
 
 This module is a modified version of Dan Pascu's cjson module for Python, which
