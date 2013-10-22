@@ -1,5 +1,10 @@
 **Everything below represents aspirational goals for this module, and has not
-been implemented yet**
+necessarily been implemented yet**
+
+Currently working features:
+
+- Parsing some datetime objects (timedelta, simple times, simple dates)
+- Parsing decimal values in decima.Decimal objects
 
 # cjsonx
 
@@ -7,7 +12,7 @@ This module is a modified version of Dan Pascu's cjson module for Python, which
 is available in the Python Package Index: https://pypi.python.org/pypi/python-cjson
 
 This version provides a couple of minor extensions to the JSON standard, as well
-as support for checking the __json__ method of non-builtin object types that are
+as support for checking the `__json__` method of non-builtin object types that are
 being encoded to JSON.
 
 ## Extensions to JSON

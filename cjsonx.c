@@ -1,6 +1,12 @@
 /*
- * Copyright (C) 2006-2007 Dan Pascu. See LICENSE for details.
- * Author: Dan Pascu <dan@ag-projects.com>
+ * Copyright (C) 2006-2007 Dan Pascu.
+ * Copyright (C) 2013 Michael Schuller.
+ *
+ * See LICENSE for details.
+ * 
+ * Authors: Dan Pascu <dan@ag-projects.com>,
+ *          Michael Schuller <michael.schuller@artlogic.net>
+ *
  *
  * Fast JSON encoder/decoder implementation for Python
  *
@@ -9,7 +15,7 @@
 #include <Python.h>
 #include <datetime.h>
 #include <stddef.h>
-//#include <stdio.h>
+#include <stdio.h>
 #include <ctype.h>
 #include <math.h>
 
@@ -39,7 +45,7 @@ static PyObject* decode_number(JSONData *jsondata);
 static PyObject* decode_array(JSONData *jsondata);
 static PyObject* decode_object(JSONData *jsondata);
 static PyObject* decode_datetime(JSONData *jsondata);
-//static PyObject* decode_decimal(JSONData *jsondata);
+static PyObject* decode_decimal(JSONData *jsondata);
 
 static PyObject *JSON_Error;
 static PyObject *JSON_EncodeError;
@@ -686,6 +692,7 @@ decode_decimal(JSONData *jsondata)
 
     PyObject *argList = Py_BuildValue("(s)", dinfo_str);
     object = PyObject_CallObject(pydecimal_Decimal, argList);
+    
     Py_DECREF(argList);
 
     jsondata->ptr = jsondata->ptr + dinfo_len;

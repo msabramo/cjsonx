@@ -28,7 +28,7 @@ Description: This module provides an extension to the JSON standard.
         100-250 times for decoding operations.
         
 Platform: Platform Independent
-Classifier: Development Status :: 1 - Planning
+Classifier: Development Status :: 3 - Alpha
 Classifier: Intended Audience :: Developers
 Classifier: License :: OSI Approved :: GNU Library or Lesser General Public License (LGPL)
 Classifier: Operating System :: OS Independent
