@@ -45,6 +45,8 @@ static PyObject *JSON_Error;
 static PyObject *JSON_EncodeError;
 static PyObject *JSON_DecodeError;
 
+static PyObject *pydecimal_Decimal;
+
 
 #if PY_VERSION_HEX < 0x02050000
 typedef int Py_ssize_t;
@@ -270,26 +272,26 @@ decode_number(JSONData *jsondata)
         if (c == 0)
             break;
         switch(c) {
-        case '0':
-        case '1':
-        case '2':
-        case '3':
-        case '4':
-        case '5':
-        case '6':
-        case '7':
-        case '8':
-        case '9':
-        case '-':
-        case '+':
-            break;
-        case '.':
-        case 'e':
-        case 'E':
-            is_float = True;
-            break;
-        default:
-            should_stop = True;
+            case '0':
+            case '1':
+            case '2':
+            case '3':
+            case '4':
+            case '5':
+            case '6':
+            case '7':
+            case '8':
+            case '9':
+            case '-':
+            case '+':
+                break;
+            case '.':
+            case 'e':
+            case 'E':
+                is_float = True;
+                break;
+            default:
+                should_stop = True;
         }
         if (should_stop) {
             break;
@@ -618,74 +620,86 @@ failure:
 
 }
 
-/*
-static PyObject* decode_decimal(JSONData *jsondata) {
 
-    PyObject *object, *str;
-    int c,
-        is_float,
-        should_stop;
-    char *ptr;
+static PyObject*
+decode_decimal(JSONData *jsondata)
+{
 
-    // check if we got a floating point number
-    ptr = jsondata.ptr;
-    is_float = should_stop = False;
-    ptr++; // Skip the starting 'D'.
+    PyObject *object;
+    char c = 0;
+
+    char *ptr = NULL,
+         *dinfo_str = NULL;
+
+    int should_stop = False,
+        dinfo_len = 0;
+
+    // look for the closing quote
+    jsondata->ptr++;
+    ptr = jsondata->ptr; // Skip the type hint
+    
+    // Find the end of the number
     while (True) {
         c = *ptr;
         if (c == 0)
             break;
         switch(c) {
-        case '0':
-        case '1':
-        case '2':
-        case '3':
-        case '4':
-        case '5':
-        case '6':
-        case '7':
-        case '8':
-        case '9':
-        case '-':
-        case '+':
-            break;
-        case '.':
-        case 'e':
-        case 'E':
-            is_float = True;
-            break;
-        default:
-            should_stop = True;
+            case '0':
+            case '1':
+            case '2':
+            case '3':
+            case '4':
+            case '5':
+            case '6':
+            case '7':
+            case '8':
+            case '9':
+            case '-':
+            case '+':
+            case '.':
+                break;
+            default:
+                should_stop = True;
         }
         if (should_stop) {
             break;
+        } else {
+            ptr++;
         }
-        ptr++;
     }
 
-    str = PyString_FromStringAndSize(jsondata.ptr, ptr - jsondata.ptr);
-    if (str == NULL)
-        return NULL;
-
-    if (is_float) {
-        object = PyFloat_FromString(str, NULL);
+    // get only the actual datetime information
+    skipSpaces(jsondata);
+    dinfo_len = ptr - jsondata->ptr;
+    if (dinfo_len) {
+        dinfo_str = (char*) malloc(dinfo_len + 1);
+        memset(dinfo_str, 0, dinfo_len + 1); // Manually make sure that the string
+                                             // ends in a 0 value, otherwise
+                                             // Py_BuildValue will return odd
+                                             // results.
+        strncpy(dinfo_str, jsondata->ptr, dinfo_len);
     } else {
-        object = PyInt_FromString(PyString_AS_STRING(str), NULL, 10);
+        PyErr_Format(JSON_DecodeError, "bad format or value for decimal starting at position " SSIZE_T_F,
+            (Py_ssize_t)(jsondata->ptr - jsondata->str));
+        goto failure;
     }
 
-    Py_DECREF(str);
+    PyObject *argList = Py_BuildValue("(s)", dinfo_str);
+    object = PyObject_CallObject(pydecimal_Decimal, argList);
+    Py_DECREF(argList);
 
-    if (object == NULL) {
-        PyErr_Format(JSON_DecodeError, "invalid number starting at position "
-                     SSIZE_T_F, (Py_ssize_t)(jsondata.ptr - jsondata.str));
-    } else {
-        jsondata.ptr = ptr;
-    }
+    jsondata->ptr = jsondata->ptr + dinfo_len;
 
+    free(dinfo_str);
+    
     return object;
 
+failure:
+    Py_XDECREF(object);
+    return NULL;
+
 }
-*/
+
 
 
 static PyObject*
@@ -723,11 +737,9 @@ decode_json(JSONData *jsondata)
     case 'd':
         object = decode_datetime(jsondata);
         break;
-/*
-        case 'D':
-            object = decode_decimal(jsondata);
-            break;
-*/
+    case 'D':
+        object = decode_decimal(jsondata);
+        break;
     case '+':
     case '-':
         if (*(jsondata->ptr+1) == 'I') {
@@ -1385,5 +1397,11 @@ initcjsonx(void)
     PyModule_AddStringConstant(m, "__version__", MODULE_VERSION);
 
     PyDateTime_IMPORT;
+    PyObject* pydecimal = PyImport_ImportModule("decimal");
+    if (pydecimal == NULL) {
+        return NULL;
+    }
+    pydecimal_Decimal = PyObject_GetAttrString(pydecimal, "Decimal");
+    Py_DECREF(pydecimal);
 
 }
