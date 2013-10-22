@@ -481,18 +481,14 @@ decode_datetime(JSONData *jsondata)
 {
     /*
      *
-     * d"YYYY-MM-DD[ HH:MM:SS[:UUUUUU][T±HH:MM]]"
+     * d"YYYY-MM-DD[ HH:MM:SS[:UUUUUU]]"
      * d"±DD:SS"
      *
      * 10 YYYY-MM-DD
      * 19 YYYY-MM-DD HH:MM:SS
-     * 26 YYYY-MM-DD HH:MM:SST±HH:MM
      * 26 YYYY-MM-DD HH:MM:SS:UUUUUU
-     * 33 YYYY-MM-DD HH:MM:SS:UUUUUUT±HH:MM
      * 08 HH:MM:SS
-     * 15 HH:MM:SST±HH:MM
      * 15 HH:MM:SS:UUUUUU
-     * 22 HH:MM:SS:UUUUUUT±HH:MM
      * va ±DD:SSSSS:UUUUUU
      */
 
@@ -551,12 +547,8 @@ decode_datetime(JSONData *jsondata)
         strncpy(tinfo_str, jsondata->ptr + 2, tinfo_len);
     }
 
-    //printf("%u\n", tinfo_len);
-    //puts(tinfo_str);
-
     if (is_tdelta) {
         n = sscanf(tinfo_str, "%d:%u:%u", &day, &second, &usecond);
-    printf("%u\n", n);
         if (n != 3) {
             PyErr_Format(JSON_DecodeError, "bad timedelta format at position " SSIZE_T_F ": %s",
                 (Py_ssize_t)(jsondata->ptr - jsondata->str),
@@ -579,40 +571,29 @@ decode_datetime(JSONData *jsondata)
                     object = PyTime_FromTime(hour, minute, second, 0);
                     break;
                 case 15:
-                    // Time with TZ or time with useconds (but not both)
-                    if (strchr(tinfo_str, 'T') != NULL) {
-                        // With TZ
-                    } else {
-                        n = sscanf(tinfo_str, "%u:%u:%u:%u", &hour, &minute, &second, &usecond);
-                        object = PyTime_FromTime(hour, minute, second, usecond);
-                    }
+                    n = sscanf(tinfo_str, "%u:%u:%u:%u", &hour, &minute, &second, &usecond);
+                    object = PyTime_FromTime(hour, minute, second, usecond);
                     break;
-                case 22:
-                    // Time with TZ and useconds
-                    break;
-                default:
-                    PyErr_Format(JSON_DecodeError, "bad format for time, date, or datetime at position " SSIZE_T_F ": %s",
-                        (Py_ssize_t)(jsondata->ptr - jsondata->str),
-                        tinfo_str);
-                    goto failure;
             }
         } else {
-                    PyErr_Format(JSON_DecodeError, "Not implemented");
-                    goto failure;
-            // yay, real datetime!
-
-            /*
-             * We'll try each possible datetime format based on the length of
-             * the string.
-             *
-             * 19 YYYY-MM-DD HH:MM:SS
-             * 26 YYYY-MM-DD HH:MM:SST±HH:MM
-             * 26 YYYY-MM-DD HH:MM:SS:UUUUUU
-             * 33 YYYY-MM-DD HH:MM:SS:UUUUUUT±HH:MM
-             *
-             */
-            //n = scanf(tinfo_str, "d\"%u-%u-%u %u:%u:%u:%uT%d:%u\"", year, month, day, hour, minute, second, usecond, tz_hour, tz_minute);
+            switch (tinfo_len) {
+                case 19:
+                    n = sscanf(tinfo_str, "%u-%u-%u %u:%u:%u", &year, &month, &day, &hour, &minute, &second);
+                    object = PPyDateTime_FromDateAndTime(year, month, day, hour, minute, second, 0);
+                    break;
+                case 26:
+                    n = sscanf(tinfo_str, "%u-%u-%u %u:%u:%u:%u", &year, &month, &day, &hour, &minute, &second, &usecond);
+                    object = PyTime_FromTime(year, month, day, hour, minute, second, usecond);
+                    break;
+            }
         }
+    }
+
+    if (object == NULL) {
+        PyErr_Format(JSON_DecodeError, "bad format for time, date, or datetime at position " SSIZE_T_F ": %s",
+            (Py_ssize_t)(jsondata->ptr - jsondata->str),
+            tinfo_str);
+        goto failure;
     }
 
     jsondata->ptr = jsondata->ptr + tinfo_len + 3;

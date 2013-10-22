@@ -45,15 +45,6 @@ where 'YYYY' is the year, 'MM' the date, 'DD' the numerical day, 'HH' the hour,
 padded numbers. The microseconds can be left off (resulting in
 `YYYY-MM-DD HH:MM:SS`) and a value of zero will be assumed.
 
-Timezones can be specified using the notation `T±HH:MM` appended to the end.
-('±' being switched out for '+' or '-' as appropriate), which would give you,
-for example:
-```
-d"2000-01-01 00:00:00:000000T+00:00"
-```
-for exact midnight on January 1, 2000 in Greenwich Mean Time. (Again,
-microseconds are optional, even if the timezone is specified).
-
 Any string matching these rules will result in a Python `datetime` object.
 
 #### Date
@@ -82,9 +73,9 @@ As before, microseconds and time zone information are optional, and will be
 included only if they are specified.
 
 `timedelta` objects can be encoded using a similar syntax, by preceding the time
-notation with a '+' or '-'. Timezone information is not valid on a timedelta
-value, and in place of hours, minutes, or seconds, only the fields days,
-seconds, and microseconds are specified. That would look something like this:
+notation with a '+' or '-'. In place of hours, minutes, or seconds, only the
+fields days, seconds, and microseconds are specified. That would look something
+like this:
 ```
 {
     "key_name": d"±DD:SS:UUUUU"
