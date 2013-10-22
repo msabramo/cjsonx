@@ -32,8 +32,9 @@ static PyObject* encode_unicode(PyObject *object);
 static PyObject* encode_tuple(PyObject *object);
 static PyObject* encode_list(PyObject *object);
 static PyObject* encode_dict(PyObject *object);
-//static PyObject* encode_datetime(PyObject *object);
-//static PyObject* encode_decimal(PyObject *object);
+static PyObject* encode_datetime(PyObject *object);
+static PyObject* encode_timedelta(PyObject *object);
+static PyObject* encode_decimal(PyObject *object);
 
 static PyObject* decode_json(JSONData *jsondata);
 static PyObject* decode_null(JSONData *jsondata);
@@ -1228,6 +1229,38 @@ Done:
 
 
 static PyObject*
+encode_datetime(PyObject *datetime)
+{
+    PyObject *v = PyObject_Str(datetime);
+    PyObject *s = PyString_FromString("\"");
+    PyObject *t = PyString_FromString("d");
+    PyObject *j = PyString_FromString("");
+    PyObject *pieces = Py_BuildValue("ssss", t, s, v, s);
+    Py_DECREF(v);
+    Py_DECREF(s);
+    Py_DECREF(t);
+    Py_DECREF(j);
+    Py_DECREF(pieces);
+    return _PyString_Join(j, pieces);
+}
+
+
+static PyObject*
+encode_decimal(PyObject *decimal)
+{
+    PyObject *v = PyObject_Str(datetime);
+    PyObject *t = PyString_FromString("D");
+    PyObject *j = PyString_FromString("");
+    PyObject *pieces = Py_BuildValue("ssss", t, v);
+    Py_DECREF(v);
+    Py_DECREF(t);
+    Py_DECREF(j);
+    Py_DECREF(pieces);
+    return _PyString_Join(j, pieces);
+}
+
+
+static PyObject*
 encode_object(PyObject *object)
 {
     if (object == Py_True) {
@@ -1261,6 +1294,12 @@ encode_object(PyObject *object)
         return encode_tuple(object);
     } else if (PyDict_Check(object)) { // use PyMapping_Check(object) instead? -Dan
         return encode_dict(object);
+    } else if (PyDate_Check(object) {
+        return encode_datetime(object);
+    } else if (PyTime_Check(object) {
+        return encode_datetime(object);
+    } else if (PyDelta_Check(object) {
+        return encode_timedelta(object);
     } else {
         PyErr_SetString(JSON_EncodeError, "object is not JSON encodable");
         return NULL;
