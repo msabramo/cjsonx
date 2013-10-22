@@ -495,9 +495,14 @@ decode_datetime(JSONData *jsondata)
     char *ptr = NULL,
          *tinfo_str = NULL;
 
-    int tdelta_days,
-        tdelta_seconds,
-        tdelta_useconds;
+    int year = 0,
+        month = 0,
+        day = 0,
+
+        hour = 0,
+        minute = 0,
+        second = 0,
+        usecond = 0;
 
     int tdelta_pos = True;
 
@@ -517,37 +522,40 @@ decode_datetime(JSONData *jsondata)
         }
         if (c == '"') {
             break;
-        } else if (jsondata->ptr - ptr == 1) {
+        }
+        if (ptr - jsondata->ptr - 2 == 0 ) { // first character
             switch (c) {
                 case '-':
                     tdelta_pos = False;
                 case '+':
                     is_tdelta = True;
-                    break;
             }
         }
 
         ptr++;
     }
-    
-    tinfo_len = ptr - jsondata->ptr + 1;
+
+    // get only the actual datetime information
+    skipSpaces(jsondata);
+    tinfo_len = ptr - (jsondata->ptr + 2);
     if (tinfo_len) {
-        tinfo_str = (char*) malloc(tinfo_len - 1);
-        strncpy(tinfo_str, jsondata->ptr, tinfo_len);
+        tinfo_str = (char*) malloc(tinfo_len);
+        strncpy(tinfo_str, jsondata->ptr + 2, tinfo_len);
     }
 
     //printf("%u\n", tinfo_len);
     //puts(tinfo_str);
 
     if (is_tdelta) {
-        n = sscanf(tinfo_str, "d\"%d:%u:%u\"", tdelta_days, tdelta_seconds, tdelta_useconds);
+        n = sscanf(tinfo_str, "%d:%u:%u", &day, &second, &usecond);
+    printf("%u\n", n);
         if (n != 3) {
             PyErr_Format(JSON_DecodeError, "bad timedelta format at position " SSIZE_T_F ": %s",
                 (Py_ssize_t)(jsondata->ptr - jsondata->str),
                 tinfo_str);
                 goto failure;
         } else {
-            object = PyDelta_FromDSU(tdelta_days, tdelta_seconds, 0);
+            object = PyDelta_FromDSU(day, second, usecond);
         }
     } else {
         char* is_datetime = strchr(tinfo_str, ' ');
@@ -555,17 +563,20 @@ decode_datetime(JSONData *jsondata)
         if (is_datetime == NULL) {
             switch (tinfo_len) {
                 case 10:
-                    // Simple date
+                    n = sscanf(tinfo_str, "%u-%u-%u", &year, &month, &day);
+                    object = PyDate_FromDate(year, month, day);
                     break;
                 case 8:
-                    // Simple time
+                    n = sscanf(tinfo_str, "%u:%u:%u", &hour, &minute, &second);
+                    object = PyTime_FromTime(hour, minute, second, 0);
                     break;
                 case 15:
                     // Time with TZ or time with useconds (but not both)
                     if (strchr(tinfo_str, 'T') != NULL) {
                         // With TZ
                     } else {
-                        // With useconds
+                        n = sscanf(tinfo_str, "%u:%u:%u:%u", &hour, &minute, &second, &usecond);
+                        object = PyTime_FromTime(hour, minute, second, usecond);
                     }
                     break;
                 case 22:
@@ -595,6 +606,8 @@ decode_datetime(JSONData *jsondata)
             //n = scanf(tinfo_str, "d\"%u-%u-%u %u:%u:%u:%uT%d:%u\"", year, month, day, hour, minute, second, usecond, tz_hour, tz_minute);
         }
     }
+
+    jsondata->ptr = jsondata->ptr + tinfo_len + 3;
 
     return object;
 
