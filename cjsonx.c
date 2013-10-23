@@ -1259,39 +1259,34 @@ encode_timedelta(PyObject *timedelta)
              *pieces,
              *result,
              *j = PyString_FromString(""),
-             *zeroPad = PyString_FromString("0"),
              *swith;
 
     long s = 0,
          h = 0,
-         m = 0,
-         u = 0,
-         d = 0;
+         m = 0;
 
     days = PyObject_GetAttrString(timedelta, "days");
     seconds = PyObject_GetAttrString(timedelta, "seconds");
     useconds = PyObject_GetAttrString(timedelta, "microseconds");
 
-    d = PyInt_AS_LONG(days);
     s = PyInt_AS_LONG(seconds);
-    u = PyInt_AS_LONG(useconds);
 
     while (s > 59) {
-        while (s > 3599) {
-            s -= 3600;
-            h += 1;
-        }
         s -= 60;
         m += 1;
     }
-
-    days = PyObject_Str(PyInt_FromLong(d));
+    while (m > 59) {
+        m -= 59;
+        h += 1;
+    }
+    
+    // TODO: Figure out what needs to be DECREF'd in this part
+    days = PyObject_Str(days);
     hours = PyObject_Str(PyInt_FromLong(h));
     minutes = PyObject_Str(PyInt_FromLong(m));
     seconds = PyObject_Str(PyInt_FromLong(s));
-    useconds = PyObject_Str(PyInt_FromLong(u));
+    useconds = PyObject_Str(useconds);
 
-    // TODO: Figure out what needs to be DECREF'd in this part
     pdays = PyObject_CallMethod(days, "rjust", "(is)", 2, "0");
     phours = PyObject_CallMethod(hours, "rjust", "(is)", 2, "0");
     pminutes = PyObject_CallMethod(minutes, "rjust", "(is)", 2, "0");
@@ -1300,17 +1295,10 @@ encode_timedelta(PyObject *timedelta)
 
     swith = PyObject_CallMethod(pdays, "startswith", "(s)", "-");
     if (swith == Py_False) {
-        Py_DECREF(days);
-        days = PyObject_CallMethod(pdays, "rjust", "(is)", 3, "+");
-        Py_DECREF(pdays);
-        pdays = days;
+        pdays = PyObject_CallMethod(pdays, "rjust", "(is)", 3, "+");
     }
 
-    if (u != 0) {
-        pieces = Py_BuildValue("(ssOsOsOsOsOs)", "d", "\"", pdays, ":", phours, ":", pminutes, ":", pseconds, ".", puseconds, "\"");
-    } else {
-        pieces = Py_BuildValue("(ssOsOsOsOs)", "d", "\"", pdays, ":", phours, ":", pminutes, ":", pseconds, "\"");
-    }
+    pieces = Py_BuildValue("(ssOsOsOsOsOs)", "d", "\"", pdays, ":", phours, ":", pminutes, ":", pseconds, ".", puseconds, "\"");
 
     result = _PyString_Join(j, pieces);
 
@@ -1324,7 +1312,6 @@ encode_timedelta(PyObject *timedelta)
     Py_DECREF(pdays);
     Py_DECREF(pdays);
     Py_DECREF(pieces);
-    Py_DECREF(zeroPad);
     Py_DECREF(j);
     Py_DECREF(swith);
 
