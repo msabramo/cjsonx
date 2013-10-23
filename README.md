@@ -65,7 +65,7 @@ Furthermore, the date portion (and any preceding space) may be dropped for a
 `time` object, like so:
 ```
 {
-    "key_name": d"HH:MM:SS:UUUUUUT±HH:MM"
+    "key_name": d"HH:MM:SS.UUUUUUT±HH:MM"
 }
 ```
 
@@ -73,17 +73,16 @@ As before, microseconds and time zone information are optional, and will be
 included only if they are specified.
 
 `timedelta` objects can be encoded using a similar syntax, by preceding the time
-notation with a '+' or '-'. In place of hours, minutes, or seconds, only the
-fields days, seconds, and microseconds are specified. That would look something
-like this:
+notation with a '+' or '-'. In addition to hours, minutes, and seconds, days and
+microseconds are specified in this format:
 ```
 {
-    "key_name": d"±DD:SS:UUUUU"
+    "key_name": d"±DD:HH:MM:SS.UUUUU"
 }
 ```
 Days must not be omitted (although it can be zero) and need not be zero-padded.
-Seconds and microseconds must not be omitted either (again, can be zero and/or
-one digit wide).
+Hours, minutes, and seconds must not be omitted either (again, can be zero
+and/or one digit wide). Microseconds are optional.
 
 ### Decimal syntax
 

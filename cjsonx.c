@@ -482,15 +482,15 @@ decode_datetime(JSONData *jsondata)
 {
     /*
      *
-     * d"YYYY-MM-DD[ HH:MM:SS[:UUUUUU]]"
+     * d"YYYY-MM-DD[ HH:MM:SS[.UUUUUU]]"
      * d"±DD:SS"
      *
      * 10 YYYY-MM-DD
      * 19 YYYY-MM-DD HH:MM:SS
-     * 26 YYYY-MM-DD HH:MM:SS:UUUUUU
+     * 26 YYYY-MM-DD HH:MM:SS.UUUUUU
      * 08 HH:MM:SS
      * 15 HH:MM:SS:UUUUUU
-     * va ±DD:SSSSS:UUUUUU
+     * va ±DD:HH:MM:SS.UUUUUU
      */
 
     PyObject *object;
@@ -549,13 +549,15 @@ decode_datetime(JSONData *jsondata)
     }
 
     if (is_tdelta) {
-        n = sscanf(tinfo_str, "%d:%u:%u", &day, &second, &usecond);
+        n = sscanf(tinfo_str, "%d:%u:%u:%u.%u", &day, &hour, &minute, &second, &usecond);
         if (n != 3) {
             PyErr_Format(JSON_DecodeError, "bad timedelta format at position " SSIZE_T_F ": %s",
                 (Py_ssize_t)(jsondata->ptr - jsondata->str),
                 tinfo_str);
                 goto failure;
         } else {
+            second += minute * 60;
+            second += hour * 60 * 60;
             object = PyDelta_FromDSU(day, second, usecond);
         }
     } else {
@@ -572,7 +574,7 @@ decode_datetime(JSONData *jsondata)
                     object = PyTime_FromTime(hour, minute, second, 0);
                     break;
                 case 15:
-                    n = sscanf(tinfo_str, "%u:%u:%u:%u", &hour, &minute, &second, &usecond);
+                    n = sscanf(tinfo_str, "%u:%u:%u.%u", &hour, &minute, &second, &usecond);
                     object = PyTime_FromTime(hour, minute, second, usecond);
                     break;
             }
@@ -580,11 +582,11 @@ decode_datetime(JSONData *jsondata)
             switch (tinfo_len) {
                 case 19:
                     n = sscanf(tinfo_str, "%u-%u-%u %u:%u:%u", &year, &month, &day, &hour, &minute, &second);
-                    object = PPyDateTime_FromDateAndTime(year, month, day, hour, minute, second, 0);
+                    object = PyDateTime_FromDateAndTime(year, month, day, hour, minute, second, 0);
                     break;
                 case 26:
-                    n = sscanf(tinfo_str, "%u-%u-%u %u:%u:%u:%u", &year, &month, &day, &hour, &minute, &second, &usecond);
-                    object = PyTime_FromTime(year, month, day, hour, minute, second, usecond);
+                    n = sscanf(tinfo_str, "%u-%u-%u %u:%u:%u.%u", &year, &month, &day, &hour, &minute, &second, &usecond);
+                    object = PyDateTime_FromDateAndTime(year, month, day, hour, minute, second, usecond);
                     break;
             }
         }
@@ -1231,32 +1233,116 @@ Done:
 static PyObject*
 encode_datetime(PyObject *datetime)
 {
-    PyObject *v = PyObject_Str(datetime);
-    PyObject *s = PyString_FromString("\"");
-    PyObject *t = PyString_FromString("d");
-    PyObject *j = PyString_FromString("");
-    PyObject *pieces = Py_BuildValue("ssss", t, s, v, s);
+    PyObject *v = PyObject_Str(datetime),
+             *pieces = Py_BuildValue("(ssOs)", "d", "\"", v, "\""),
+             *j = PyString_FromString(""),
+             *result;
+
+    result = _PyString_Join(j, pieces);
+
     Py_DECREF(v);
-    Py_DECREF(s);
-    Py_DECREF(t);
     Py_DECREF(j);
     Py_DECREF(pieces);
-    return _PyString_Join(j, pieces);
+
+    return result;
+}
+
+
+static PyObject*
+encode_timedelta(PyObject *timedelta)
+{
+    PyObject *seconds, *pseconds,
+             *useconds, *puseconds,
+             *days, *pdays,
+             *hours, *phours,
+             *minutes, *pminutes,
+             *pieces,
+             *result,
+             *j = PyString_FromString(""),
+             *zeroPad = PyString_FromString("0"),
+             *swith;
+
+    long s = 0,
+         h = 0,
+         m = 0,
+         u = 0,
+         d = 0;
+
+    days = PyObject_GetAttrString(timedelta, "days");
+    seconds = PyObject_GetAttrString(timedelta, "seconds");
+    useconds = PyObject_GetAttrString(timedelta, "microseconds");
+
+    d = PyInt_AS_LONG(days);
+    s = PyInt_AS_LONG(seconds);
+    u = PyInt_AS_LONG(useconds);
+
+    while (s > 59) {
+        while (s > 3599) {
+            s -= 3600;
+            h += 1;
+        }
+        s -= 60;
+        m += 1;
+    }
+
+    days = PyObject_Str(PyInt_FromLong(d));
+    hours = PyObject_Str(PyInt_FromLong(h));
+    minutes = PyObject_Str(PyInt_FromLong(m));
+    seconds = PyObject_Str(PyInt_FromLong(s));
+    useconds = PyObject_Str(PyInt_FromLong(u));
+
+    // TODO: Figure out what needs to be DECREF'd in this part
+    pdays = PyObject_CallMethod(days, "rjust", "(is)", 2, "0");
+    phours = PyObject_CallMethod(hours, "rjust", "(is)", 2, "0");
+    pminutes = PyObject_CallMethod(minutes, "rjust", "(is)", 2, "0");
+    pseconds = PyObject_CallMethod(seconds, "rjust", "(is)", 2, "0");
+    puseconds = PyObject_CallMethod(useconds, "rjust", "(is)", 6, "0");
+
+    swith = PyObject_CallMethod(pdays, "startswith", "(s)", "-");
+    if (swith == Py_False) {
+        pdays = PyObject_CallMethod(pdays, "rjust", "(is)", 3, "+");
+    }
+
+    if (u != 0) {
+        pieces = Py_BuildValue("(ssOsOsOsOsOs)", "d", "\"", pdays, ":", phours, ":", pminutes, ":", pseconds, ".", puseconds, "\"");
+    } else {
+        pieces = Py_BuildValue("(ssOsOsOsOs)", "d", "\"", pdays, ":", phours, ":", pminutes, ":", pseconds, "\"");
+    }
+
+    result = _PyString_Join(j, pieces);
+
+    Py_DECREF(seconds);
+    Py_DECREF(useconds);
+    Py_DECREF(days);
+    Py_DECREF(hours);
+    Py_DECREF(pieces);
+    Py_DECREF(pseconds);
+    Py_DECREF(puseconds);
+    Py_DECREF(pdays);
+    Py_DECREF(pdays);
+    Py_DECREF(pieces);
+    Py_DECREF(zeroPad);
+    Py_DECREF(j);
+    Py_DECREF(swith);
+
+    return result;
 }
 
 
 static PyObject*
 encode_decimal(PyObject *decimal)
 {
-    PyObject *v = PyObject_Str(datetime);
+    PyObject *v = PyObject_Str(decimal);
     PyObject *t = PyString_FromString("D");
     PyObject *j = PyString_FromString("");
-    PyObject *pieces = Py_BuildValue("ssss", t, v);
+    PyObject *result;
+    PyObject *pieces = Py_BuildValue("(sO)", "D", v);
+    result = _PyString_Join(j, pieces);
     Py_DECREF(v);
     Py_DECREF(t);
     Py_DECREF(j);
     Py_DECREF(pieces);
-    return _PyString_Join(j, pieces);
+    return result;
 }
 
 
@@ -1294,12 +1380,14 @@ encode_object(PyObject *object)
         return encode_tuple(object);
     } else if (PyDict_Check(object)) { // use PyMapping_Check(object) instead? -Dan
         return encode_dict(object);
-    } else if (PyDate_Check(object) {
+    } else if (PyDate_Check(object)) {
         return encode_datetime(object);
-    } else if (PyTime_Check(object) {
+    } else if (PyTime_Check(object)) {
         return encode_datetime(object);
-    } else if (PyDelta_Check(object) {
+    } else if (PyDelta_Check(object)) {
         return encode_timedelta(object);
+    } else if (PyObject_TypeCheck(object, pydecimal_Decimal)) {
+        return encode_decimal(object);
     } else {
         PyErr_SetString(JSON_EncodeError, "object is not JSON encodable");
         return NULL;
@@ -1425,9 +1513,6 @@ initcjsonx(void)
 
     PyDateTime_IMPORT;
     PyObject* pydecimal = PyImport_ImportModule("decimal");
-    if (pydecimal == NULL) {
-        return NULL;
-    }
     pydecimal_Decimal = PyObject_GetAttrString(pydecimal, "Decimal");
     Py_DECREF(pydecimal);
 
