@@ -1300,7 +1300,10 @@ encode_timedelta(PyObject *timedelta)
 
     swith = PyObject_CallMethod(pdays, "startswith", "(s)", "-");
     if (swith == Py_False) {
-        pdays = PyObject_CallMethod(pdays, "rjust", "(is)", 3, "+");
+        Py_DECREF(days);
+        days = PyObject_CallMethod(pdays, "rjust", "(is)", 3, "+");
+        Py_DECREF(pdays);
+        pdays = days;
     }
 
     if (u != 0) {
