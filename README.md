@@ -3,8 +3,7 @@ necessarily been implemented yet**
 
 Currently working features:
 
-- Parsing some datetime objects (timedelta, simple times, simple dates)
-- Parsing decimal values in decima.Decimal objects
+- All JSON extensions are now working (both for writing and parsing)
 
 # cjsonx
 
