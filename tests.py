@@ -126,6 +126,8 @@ class JsonTest(unittest.TestCase):
         s = cjsonx.encode(u'\u1001')
         self.assertEqual(r'"\u1001"', _removeWhitespace(s))
 
+##
+
     def testWriteDecimal(self):
         s = cjsonx.encode(decimal.Decimal("0.1"))
         self.assertEqual("D0.1", _removeWhitespace(s))
@@ -177,6 +179,21 @@ class JsonTest(unittest.TestCase):
     def testWriteNegativeTimedeltaWithUseconds(self):
         s = cjsonx.encode(datetime.timedelta(-1, 800, 11))
         self.assertEqual('d"-01:00:13:20.000011"', _removeWhitespace(s))
+
+    def testWriteWithmagicMethodReturnsString(self):
+        class O(object):
+            def __jsonx__(self):
+                return '{"a": 1}'
+        s = cjsonx.encode(O())
+        self.assertEqual('{"a":1}', _removeWhitespace(s))
+
+    def testWriteWithMagicMethodReturnsObject(self):
+        class O(object):
+            def __jsonx__(self):
+                return {'a': 1}
+        s = cjsonx.encode(O())
+        self.assertEqual('{"a":1}', _removeWhitespace(s))
+##
 
     def testReadBadEscapedHexCharacter(self):
         self.assertRaises(_exception, self.doReadBadEscapedHexCharacter)
