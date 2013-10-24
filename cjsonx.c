@@ -1251,25 +1251,36 @@ encode_datetime(PyObject *datetime)
 static PyObject*
 encode_timedelta(PyObject *timedelta)
 {
-    PyObject *seconds, *pseconds,
-             *useconds, *puseconds,
-             *days, *pdays,
-             *hours, *phours,
-             *minutes, *pminutes,
+    /*
+     * I'm probably assigning way too many variables here (and surely using
+     * more Python calls than I should), but once it's working reliably I may
+     * try to move some of the formatting operations back into proper C. -MCS
+     *
+     */
+
+    PyObject *seconds, *pseconds, *secondstr,
+             *useconds, *puseconds, *usecondstr,
+             *adays, *days, *pdays, *daystr, *pdays2,
+             *phours, *hourstr,
+             *pminutes, *minutestr,
              *pieces,
              *result,
-             *j = PyString_FromString(""),
-             *swith;
+            
+             *j = PyString_FromString("");
 
-    long s = 0,
+    long d = 0,
+         s = 0,
          h = 0,
-         m = 0;
+         m = 0,
+         u = 0;
 
     days = PyObject_GetAttrString(timedelta, "days");
     seconds = PyObject_GetAttrString(timedelta, "seconds");
     useconds = PyObject_GetAttrString(timedelta, "microseconds");
 
+    u = PyInt_AS_LONG(useconds);
     s = PyInt_AS_LONG(seconds);
+    d = PyInt_AS_LONG(days);
 
     while (s > 59) {
         s -= 60;
@@ -1279,41 +1290,53 @@ encode_timedelta(PyObject *timedelta)
         m -= 59;
         h += 1;
     }
+
+    adays = PyObject_CallMethod(days, "__abs__", "()");
     
-    // TODO: Figure out what needs to be DECREF'd in this part
-    days = PyObject_Str(days);
-    hours = PyObject_Str(PyInt_FromLong(h));
-    minutes = PyObject_Str(PyInt_FromLong(m));
-    seconds = PyObject_Str(PyInt_FromLong(s));
-    useconds = PyObject_Str(useconds);
+    daystr = PyObject_Str(adays);
+    hourstr = PyObject_Str(PyInt_FromLong(h));
+    minutestr = PyObject_Str(PyInt_FromLong(m));
+    secondstr = PyObject_Str(PyInt_FromLong(s));
+    usecondstr = PyObject_Str(useconds);
 
-    pdays = PyObject_CallMethod(days, "rjust", "(is)", 2, "0");
-    phours = PyObject_CallMethod(hours, "rjust", "(is)", 2, "0");
-    pminutes = PyObject_CallMethod(minutes, "rjust", "(is)", 2, "0");
-    pseconds = PyObject_CallMethod(seconds, "rjust", "(is)", 2, "0");
-    puseconds = PyObject_CallMethod(useconds, "rjust", "(is)", 6, "0");
+    pdays = PyObject_CallMethod(daystr, "rjust", "(is)", 2, "0");
+    phours = PyObject_CallMethod(hourstr, "rjust", "(is)", 2, "0");
+    pminutes = PyObject_CallMethod(minutestr, "rjust", "(is)", 2, "0");
+    pseconds = PyObject_CallMethod(secondstr, "rjust", "(is)", 2, "0");
+    puseconds = PyObject_CallMethod(usecondstr, "rjust", "(is)", 6, "0");
 
-    swith = PyObject_CallMethod(pdays, "startswith", "(s)", "-");
-    if (swith == Py_False) {
-        pdays = PyObject_CallMethod(pdays, "rjust", "(is)", 3, "+");
+    if (d > -1) {
+        pdays2 = PyObject_CallMethod(pdays, "rjust", "(is)", 3, "+");
+    } else {
+        pdays2 = PyObject_CallMethod(pdays, "rjust", "(is)", 3, "-");
     }
 
-    pieces = Py_BuildValue("(ssOsOsOsOsOs)", "d", "\"", pdays, ":", phours, ":", pminutes, ":", pseconds, ".", puseconds, "\"");
+    if (u) {
+        pieces = Py_BuildValue("(ssOsOsOsOsOs)", "d", "\"", pdays2, ":", phours, ":", pminutes, ":", pseconds, ".", puseconds, "\"");
+    } else {
+        pieces = Py_BuildValue("(ssOsOsOsOs)", "d", "\"", pdays2, ":", phours, ":", pminutes, ":", pseconds, "\"");
+    }
 
     result = _PyString_Join(j, pieces);
 
     Py_DECREF(seconds);
     Py_DECREF(useconds);
     Py_DECREF(days);
-    Py_DECREF(hours);
+
     Py_DECREF(pieces);
+
     Py_DECREF(pseconds);
     Py_DECREF(puseconds);
     Py_DECREF(pdays);
-    Py_DECREF(pdays);
-    Py_DECREF(pieces);
+    Py_DECREF(phours);
+
+    Py_DECREF(daystr);
+    Py_DECREF(minutestr);
+    Py_DECREF(secondstr);
+    Py_DECREF(usecondstr);
+    Py_DECREF(hourstr);
+
     Py_DECREF(j);
-    Py_DECREF(swith);
 
     return result;
 }

@@ -144,11 +144,11 @@ class JsonTest(unittest.TestCase):
 
     def testWriteDateTime(self):
         s = cjsonx.encode(datetime.datetime(2013, 1, 10, 4, 20, 11))
-        self.assertEqual('d"2013-01-10 04:20:11"', _removeWhitespace(s))
+        self.assertEqual('d"2013-01-10 04:20:11"', s)
 
     def testWriteDateTimeWithUseconds(self):
         s = cjsonx.encode(datetime.datetime(2013, 1, 10, 4, 20, 11, 11))
-        self.assertEqual('d"2013-01-10 04:20:11.000011"', _removeWhitespace(s))
+        self.assertEqual('d"2013-01-10 04:20:11.000011"', s)
 
     def testWriteTime(self):
         s = cjsonx.encode(datetime.time(4, 20, 11))
