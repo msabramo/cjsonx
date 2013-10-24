@@ -1413,17 +1413,15 @@ encode_object(PyObject *object)
 static PyObject*
 JSON_encode(PyObject *self, PyObject *object)
 {
-    // If either __jsonx__ or __json__ methods return a Python string, return
-    // that string. If they return any other kind of object, we will try and
+    // If the __jsonx__ method returns a Python string, return
+    // that string. If it returns any other kind of object, we will try and
     // encode *that* object (which gives you the opportunity to coerce
-    // unencodable values
+    // unencodable values into somethign encodable).
 
     PyObject *object_to_encode;
 
     if (PyObject_HasAttrString(object, "__jsonx__")) {
         object_to_encode = PyObject_CallMethod(object, "__jsonx__", "()");
-    } else if (PyObject_HasAttrString(object, "__json__")) {
-        object_to_encode = PyObject_CallMethod(object, "__json__", "()");
     } else {
         return encode_object(object);
     }
