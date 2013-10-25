@@ -1,10 +1,3 @@
-**Everything below represents aspirational goals for this module, and has not
-necessarily been implemented yet**
-
-Currently working features:
-
-- All JSON extensions are now working (both for writing and parsing)
-
 # cjsonx
 
 This module is a modified version of Dan Pascu's cjson module for Python, which
@@ -96,17 +89,41 @@ There is no limit on the number of decimal places, and `D0.1` is just as valid
 as `D.1` (although the encoder will always enter a leading zero before the
 decimal portion of the number).
 
-### The `__json__` method
+### The `__jsonx__` method
 
 The original `cjson` module has no support for objects which are not built-in
-Python types. To ease this problem slightly, `cjsonx` will first attempt to find
-and call the `__json__` method on any object passed into it (this also allows
-you to override the default parsing behaviour of builtins).
+Python types. To ease this problem slightly, `cjsonx` will first attempt to
+find and call the `__jsonx__` method on any object passed into it (this also
+allows you to override the default parsing behaviour of builtins).
 
 This magic method should return a value that is parseable itself (ie, a dict,
 list, array, date, time, timedelta, datetime, or Decimal object) or a completely
 parsed string (which also fulfills the first criteria, and will be returned as-
-is). Returning anything else will result in an EncodeError being thrown.
+is). Returning anything else will result in an `EncodeError` exception being 
+thrown.
+
+## Installation
+
+To install the module, simply clone the repository and use the standard Python
+installation method:
+```bash
+$ git clone https://github.com/petronius/cjsonx
+$ cd cjsonx
+$ sudo python setup.py install
+```
+
+Once installation is complete, you can test the module using the included unit
+tests:
+```bash
+$ python tests.py
+```
+
+## To do
+
+- Complete test coverage (reading string values into Python is currently
+  incomplete test-wise, as is the new object support in complex object tests.
+- Move string formatting operations in the `encode_timedelta` function into
+  pure C to make them more efficient.
 
 ## License
 
