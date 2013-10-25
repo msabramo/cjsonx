@@ -132,18 +132,36 @@ class JsonTest(unittest.TestCase):
         s = cjsonx.encode(decimal.Decimal("0.1"))
         self.assertEqual("D0.1", _removeWhitespace(s))
 
+    def testReadDecimal(self):
+        s = cjsonx.decode("D0.1")
+        self.assertEqual(s, decimal.Decimal("0.1"))
+
     def testWriteDecimalInt(self):
         s = cjsonx.encode(decimal.Decimal("2"))
         self.assertEqual("D2", _removeWhitespace(s))
+
+    def testReadDecimalInt(self):
+        s = cjsonx.decode("D2")
+        self.assertEqual(s, decimal.Decimal("2"))
 
     def testWriteNegativeDecimal(self):
         s = cjsonx.encode(decimal.Decimal("-1.0"))
         self.assertEqual("D-1.0", _removeWhitespace(s))
 
+    def testReadNegativeDecimal(self):
+        s = cjsonx.decode("D-1.0")
+        self.assertEqual(s, decimal.Decimal("-1.0"))
+
     def testWriteNegativeDecimalInt(self):
         s = cjsonx.encode(decimal.Decimal("-2"))
         self.assertEqual("D-2", _removeWhitespace(s))
 
+    def testReadNegativeDecimalInt(self):
+        s = cjsonx.decode("D-2")
+        self.assertEqual(s, decimal.Decimal("-2"))
+
+    ##
+    
     def testWriteDateTime(self):
         s = cjsonx.encode(datetime.datetime(2013, 1, 10, 4, 20, 11))
         self.assertEqual('d"2013-01-10 04:20:11"', s)
