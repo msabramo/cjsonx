@@ -1422,19 +1422,14 @@ JSON_encode(PyObject *self, PyObject *object)
 
     if (PyObject_HasAttrString(object, "__jsonx__")) {
         object_to_encode = PyObject_CallMethod(object, "__jsonx__", "()");
+        if (PyErr_Occurred()) {
+            Py_XDECREF(object_to_encode);
+            return NULL;
+        } else {
+            return encode_object(object_to_encode);
+        }
     } else {
         return encode_object(object);
-    }
-
-    if (PyErr_Occurred()) {
-        Py_XDECREF(object_to_encode);
-        return NULL;
-    }
-
-    if (PyString_Check(object_to_encode)) {
-        return object_to_encode;
-    } else {
-        return encode_object(object_to_encode);
     }
 
 }
