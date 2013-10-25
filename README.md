@@ -41,8 +41,8 @@ Any string matching these rules will result in a Python `datetime` object.
 
 #### Date
 
-If you leave off the time portion (including any time zone information), the
-string will be parsed into a `date` object. For example:
+If you leave off the time portion, the string will be parsed into a `date` 
+object. For example:
 ```
 {
     "key_name": d"YYYY-MM-DD"
