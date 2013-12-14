@@ -4,7 +4,7 @@ This module is a modified version of Dan Pascu's cjson module for Python, which
 is available in the Python Package Index: https://pypi.python.org/pypi/python-cjson
 
 This version provides a couple of minor extensions to the JSON standard, as well
-as support for checking the `__json__` method of non-builtin object types that are
+as support for checking the `__jsonx__` method of non-builtin object types that are
 being encoded to JSON.
 
 ## Extensions to JSON
@@ -92,13 +92,15 @@ decimal portion of the number).
 ### The `__jsonx__` method
 
 The original `cjson` module has no support for objects which are not built-in
-Python types. (Although I have made a fork of cjson that does exactly that,
-which you can find [here](https://github.com/petronius/cjson).)
+Python types. To ease this problem slightly, `cjsonx` will first attempt to
+find and call the `__jsonx__` method on any object passed into it (this also
+allows you to override the default parsing behaviour of builtins).
 
-To ease this problem slightly, `cjsonx` will first attempt to find and call the
-`__jsonx__` method on any object passed into it (this also allows you to
-override the default parsing behaviour of builtins). The result of that call
-will be then be encoded.
+This magic method should return a value that is parseable itself (ie, a dict,
+list, array, date, time, timedelta, datetime, or Decimal object) or a completely
+parsed string (which also fulfills the first criteria, and will be returned as-
+is). Returning anything else will result in an `EncodeError` exception being 
+thrown.
 
 ## Installation
 

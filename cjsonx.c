@@ -480,18 +480,6 @@ failure:
 static PyObject*
 decode_datetime(JSONData *jsondata)
 {
-    /*
-     *
-     * d"YYYY-MM-DD[ HH:MM:SS[.UUUUUU]]"
-     * d"±DD:SS"
-     *
-     * 10 YYYY-MM-DD
-     * 19 YYYY-MM-DD HH:MM:SS
-     * 26 YYYY-MM-DD HH:MM:SS.UUUUUU
-     * 08 HH:MM:SS
-     * 15 HH:MM:SS:UUUUUU
-     * va ±DD:HH:MM:SS.UUUUUU
-     */
 
     PyObject *object;
     char c = 0;
@@ -1416,12 +1404,16 @@ JSON_encode(PyObject *self, PyObject *object)
 
     /*
      * Check for the presence of a __jsonx__ magic method, and if it exists,
-     * attempt to call it. Encode the result of that call.
+     * attempt to call it. If it returns a valid Python object, encode that
+     * object instead.
      *
      */
     
     PyObject *object_to_encode;
 
+    // Intentionally not doing a callable check, because of the propensity to
+    // cause confusion if the __jsonx__ attribute accidently gets set to an
+    // object that isn't callable.
     if (PyObject_HasAttrString(object, "__jsonx__")) {
         object_to_encode = PyObject_CallMethod(object, "__jsonx__", "()");
         if (PyErr_Occurred()) {

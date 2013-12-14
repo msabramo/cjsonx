@@ -20,10 +20,10 @@ setup(name         = "python-cjsonx",
         This module provides an extension to the JSON standard.
 
         This is a modified version of Dan Pascu's cjson module, and provides a
-        couple of minor extensions to the JSON standard, as well as support for
-        checking the __json__ method of non-builtin object types that are being
-        encoded to JSON.This module implements a very fast JSON encoder/decoder
-        for Python.
+        couple of minor extensions to the JSON standard (which I am calling JSONX
+        for the purposes of the documentation), as well as support for checking the
+        __jsonx__ method of non-builtin object types that are being encoded to JSON.
+        This module implements a very fast JSON encoder/decoder for Python.
 
         JSON stands for JavaScript Object Notation and is a text based lightweight
         data exchange format which is easy for humans to read/write and for machines
