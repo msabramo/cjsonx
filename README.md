@@ -29,13 +29,13 @@ the advantage of being more human-friendly notation.
 The basic syntax is as follows:
 ```
 {
-    "key_name": d"YYYY-MM-DD HH:MM:SS:UUUUUU"
+    "key_name": d"YYYY-MM-DD HH:MM:SS.UUUUUU"
 }
 ```
 where 'YYYY' is the year, 'MM' the date, 'DD' the numerical day, 'HH' the hour,
-'MM' the minute, 'SS' the seconds, and 'UUUUUU' the microseconds. All are zero-
-padded numbers. The microseconds can be left off (resulting in
-`YYYY-MM-DD HH:MM:SS`) and a value of zero will be assumed.
+'MM' the minute, 'SS' the seconds, and 'UUUUUU' the fractions of a second. All 
+are zero- padded numbers. The fractions of a second can be left off (resulting 
+in `YYYY-MM-DD HH:MM:SS`) and a value of zero will be assumed.
 
 Any string matching these rules will result in a Python `datetime` object.
 
@@ -57,24 +57,24 @@ Furthermore, the date portion (and any preceding space) may be dropped for a
 `time` object, like so:
 ```
 {
-    "key_name": d"HH:MM:SS.UUUUUUT±HH:MM"
+    "key_name": d"HH:MM:SS.UUUUUU"
 }
 ```
 
-As before, microseconds and time zone information are optional, and will be
-included only if they are specified.
+As before, fractions of a second and time zone information are optional, and 
+will be included only if they are specified.
 
 `timedelta` objects can be encoded using a similar syntax, by preceding the time
 notation with a '+' or '-'. In addition to hours, minutes, and seconds, days and
-microseconds are specified in this format:
+fractions of a second are specified in this format:
 ```
 {
-    "key_name": d"±DD:HH:MM:SS.UUUUU"
+    "key_name": d"±DD:HH:MM:SS.UUUUUU"
 }
 ```
 Days must not be omitted (although it can be zero) and need not be zero-padded.
 Hours, minutes, and seconds must not be omitted either (again, can be zero
-and/or one digit wide). Microseconds are optional.
+and/or one digit wide). Fractions of a second are optional.
 
 ### Decimal syntax
 
